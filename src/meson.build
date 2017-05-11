@@ -255,7 +255,9 @@ libnautilus_sources = [
     'nautilus-file-undo-operations.c',
     'nautilus-file-undo-operations.h',
     'nautilus-file-undo-manager.c',
-    'nautilus-file-undo-manager.h'
+    'nautilus-file-undo-manager.h',
+    'nautilus-task.c',
+    'nautilus-task.h',
 ]
 
 if get_option ('enable-tracker')
