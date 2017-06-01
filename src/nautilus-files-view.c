@@ -99,6 +99,9 @@
 #define DEBUG_FLAG NAUTILUS_DEBUG_DIRECTORY_VIEW
 #include "nautilus-debug.h"
 
+#include "nautilus-task-manager.h"
+#include "tasks/nautilus-extract-task.h"
+
 /* Minimum starting update inverval */
 #define UPDATE_INTERVAL_MIN 100
 /* Maximum update interval */
@@ -6292,15 +6295,19 @@ typedef struct
 } ExtractData;
 
 static void
-extract_done (GList    *outputs,
-              gpointer  user_data)
+extract_done (NautilusTask *task,
+              gpointer      user_data)
 {
+    NautilusExtractTask *extract_task;
     NautilusFilesViewPrivate *priv;
+    GList *outputs;
     ExtractData *data;
     GList *l;
     gboolean all_files_acknowledged;
 
+    extract_task = NAUTILUS_EXTRACT_TASK (task);
     data = user_data;
+    outputs = nautilus_extract_task_get_output_files (extract_task);
 
     if (data->view == NULL)
     {
@@ -6394,6 +6401,8 @@ extract_files (NautilusFilesView *view,
 
     if (extracting_to_current_directory)
     {
+        g_autoptr (NautilusTaskManager) manager = NULL;
+        g_autoptr (NautilusTask) task = NULL;
         ExtractData *data;
 
         data = g_new (ExtractData, 1);
@@ -6413,11 +6422,14 @@ extract_files (NautilusFilesView *view,
                                NULL,
                                G_CONNECT_AFTER);
 
-        nautilus_file_operations_extract_files (locations,
-                                                destination_directory,
-                                                nautilus_files_view_get_containing_window (view),
-                                                extract_done,
-                                                data);
+        manager = nautilus_task_manager_dup_singleton ();
+        task = nautilus_extract_task_new (nautilus_files_view_get_containing_window (view),
+                                          locations,
+                                          destination_directory);
+
+
+        nautilus_task_manager_queue_task (manager, task,
+                                          extract_done, data);
     }
     else
     {
